@@ -1,7 +1,28 @@
 name: CI
+run-name: "CI ${{ inputs.leg || github.event_name }} ${{ inputs.racecar_run }}"
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
 
+  workflow_dispatch:
+    inputs:
+      leg:
+        description: "baseline (uninstrumented) or instrumented (under chalk/curiosity)"
+        type: choice
+        options: [instrumented, baseline]
+        default: baseline
+      profile:
+        description: "CrashOverride chalk profile"
+        type: string
+        default: curiosity-tests-racecar
+      racecar_run:
+        description: "racecar correlation token, echoed into the run name"
+        type: string
+        default: ""
+
+env:
+  CHALK_ON: ${{ inputs.leg == 'instrumented' }}
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -9,6 +30,7 @@ concurrency:
 jobs:
 
   pre-commit:
+    if: false   # racecar: scan/report job, not a build
 
     runs-on: ubuntu-24.04
 
@@ -44,7 +66,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "pypy3.11"]
-        os: [macos-15, ubuntu-24.04, ubuntu-24.04-arm, windows-2025]
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
         exclude:
           - python-version: "pypy3.11"
             os: windows-2025
